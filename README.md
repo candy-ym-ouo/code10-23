@@ -73,6 +73,23 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
+### 关键链路集成测试
+
+`apps/api/test` 与 `apps/worker/test` 中的集成测试会自动下载并启动一次性的
+嵌入式 PostgreSQL（embedded-postgres），按 `apps/api/prisma/migrations`
+执行真实迁移，**无需**本机安装或运行 PostgreSQL；每个测试文件开始前清空全表以保证隔离。
+
+```bash
+npm test
+```
+
+覆盖的关键不变量：
+
+- `refresh-token-replay.test.ts`：Refresh Token 轮换；重放旧令牌必须撤销整个会话族（含刚签发的新令牌），且不产生新会话。
+- `upload-digest-conflict.test.ts`：相同 SHA-256 复用已有存储对象（不签新 URL、不入队）；确认上传时对象真实摘要不符则拒绝，资产不得进入可复盘状态。
+- `review-rollback.test.ts`：复盘在单事务内关闭；事务中途失败时状态、复盘、进度、目标全部回滚，且可用原版本号重试；过期版本号返回 `VERSION_CONFLICT` 且零变更。
+- `worker` 的 `overdue-goals.test.ts`：逾期扫描按 UTC 日界只把 OPEN/IN_PROGRESS 目标置为 MISSED，今天到期不算逾期，终态目标不被改写，扫描幂等。
+
 ## 必需环境变量
 
 | 变量 | 用途 | 示例 |

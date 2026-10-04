@@ -10,6 +10,7 @@ import { prisma } from "./lib/prisma.js";
 import { deleteObject, getObjectStream, putObject } from "./lib/s3.js";
 import { generatePeaks, probeAudio } from "./lib/media.js";
 import { buildUserExport } from "./lib/export.js";
+import { scanOverdueGoals as runOverdueGoalScan } from "./lib/overdue-goals.js";
 
 const config = getConfig();
 const redis = new Redis(config.REDIS_URL, { maxRetriesPerRequest: null });
@@ -113,16 +114,8 @@ async function exportData(exportId: string) {
 }
 
 async function scanOverdueGoals() {
-  const startOfToday = new Date();
-  startOfToday.setUTCHours(0, 0, 0, 0);
-  const result = await prisma.goal.updateMany({
-    where: {
-      dueDate: { lt: startOfToday },
-      status: { in: ["OPEN", "IN_PROGRESS"] },
-    },
-    data: { status: "MISSED" },
-  });
-  if (result.count > 0) log("info", { count: result.count }, "overdue goals marked missed");
+  const count = await runOverdueGoalScan(prisma);
+  if (count > 0) log("info", { count }, "overdue goals marked missed");
 }
 
 const worker = new Worker(

@@ -15,7 +15,7 @@
     "dev": "concurrently -n web,api,worker -c cyan,green,yellow \"npm run dev -w @practice/web\" \"npm run dev -w @practice/api\" \"npm run dev -w @practice/worker\"",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run db:generate && npm run test --workspaces --if-present",
     "test:e2e": "npm run test:e2e -w @practice/web",
     "db:generate": "npm run prisma:generate -w @practice/api",
     "db:migrate": "npm run prisma:migrate -w @practice/api",
