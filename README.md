@@ -73,6 +73,27 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
+### 集成测试
+
+`npm test` 中的关键链路集成测试不需要外部 PostgreSQL / Redis / S3：
+API 与 Worker 测试使用进程内 [PGlite](https://github.com/electric-sql/pglite)
+（经 `@electric-sql/pglite-socket` 暴露为标准 PG 连接，Prisma 走真实 SQL 与事务），
+对象存储与队列在相关用例中以内存替身 mock，HTTP 层则通过 Fastify `inject`
+走完整的真实路由、插件、鉴权与错误处理链路。
+
+隔离策略：每个测试文件在 setup 阶段新建一个全新的内存数据库并应用全部迁移，
+文件内用例之间以 `TRUNCATE ... RESTART IDENTITY CASCADE` 清空；
+各文件独立的 Fastify 实例互不共享状态。
+
+覆盖的关键链路（断言按编号锚定到具体不变量，失败可直接定位）：
+
+- 刷新令牌重放：轮换后旧令牌失效、重放触发整族吊销且不波及其他用户。
+- 上传摘要冲突：同 SHA-256 对象复用、按用户隔离、大小写归一，以及确认上传时
+  摘要/大小/对象缺失校验。
+- 复盘关闭与回滚：事务中途失败整体回滚、乐观锁并发只成功一次、缺项拒绝、
+  正常关闭的聚合时长与状态推进。
+- 目标逾期：截止日边界、关闭状态不被改写、仅更新状态、扫描幂等与跨用户批处理。
+
 ## 必需环境变量
 
 | 变量 | 用途 | 示例 |

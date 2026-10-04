@@ -5,8 +5,6 @@ export default defineConfig({
     environment: "node",
     include: ["test/**/*.test.ts"],
     setupFiles: ["./test/helpers/setup.ts"],
-    // 串行执行：每个测试文件拥有独立的内存数据库（setup 中新建），
-    // 用例之间用 TRUNCATE 隔离，避免 PGlite WASM 实例并发带来噪声。
     fileParallelism: false,
   },
 });
